@@ -1,0 +1,19 @@
+APZ-Chain/
+├── apz_manager.py          # ماژول تحلیل اصلی (GUI + CLI)
+├── apz_orchestrator.py     # هماهنگ‌کننده‌ی زنجیره (جدید)
+├── apz_api.py              # سرور API (جدید)
+├── reputation_engine.py    # بدون تغییر
+├── threat_platform.py      # بدون تغییر (با YARA پیشرفته)
+├── risk_fusion_engine.py   # بدون تغییر
+├── axml_parser.py          # بدون تغییر
+├── sandbox_adapter.py      # بدون تغییر
+├── report_generator.py     # بدون تغییر
+├── logger.py               # مدیریت لاگ
+├── config.yaml             # تنظیمات مرکزی (به‌روز شده)
+├── database.py             # مدل پایگاه داده (جدید)
+├── requirements.txt        # به‌روز شده با Flask, sqlalchemy
+├── run_windows.bat
+├── build_windows.bat
+├── rules/                  # قوانین YARA
+├── docs/
+└── tests/
