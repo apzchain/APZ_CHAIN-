@@ -1,0 +1,24 @@
+# پیکربندی زنجیره APZ
+database: "apz.db"
+api:
+  enabled: true
+  host: "0.0.0.0"
+  port: 5000
+
+orchestrator:
+  max_workers: 4
+  default_source: "cli"
+
+sandbox:
+  simulate: true
+
+yara_rules_dir: "rules"
+
+reputation:
+  vt_enabled: true
+  ha_enabled: true
+  md_enabled: true
+
+logging:
+  level: "INFO"
+  file: "apz.log"
