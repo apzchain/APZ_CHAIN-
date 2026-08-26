@@ -1,0 +1,5 @@
+androguard>=3.4.0
+pyyaml>=6.0
+weasyprint>=60.0
+flask>=2.0
+sqlalchemy>=1.4
