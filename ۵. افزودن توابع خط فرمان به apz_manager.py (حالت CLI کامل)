@@ -1,0 +1,39 @@
+# ========== حالت خط فرمان ==========
+def main_cli():
+    import argparse
+    parser = argparse.ArgumentParser(description='APZ Manager - CLI mode')
+    parser.add_argument('--file', help='مسیر APK برای تحلیل')
+    parser.add_argument('--output', help='مسیر فایل خروجی JSON')
+    parser.add_argument('--batch', help='فایل شامل لیست APKها (یک مسیر در هر خط)')
+    parser.add_argument('--db', action='store_true', help='ذخیره در پایگاه داده')
+    args = parser.parse_args()
+
+    orchestrator = APZOrchestrator()
+
+    if args.batch:
+        with open(args.batch, 'r') as f:
+            paths = [line.strip() for line in f if line.strip()]
+        results = orchestrator.analyze_batch(paths, source='cli')
+        if args.output:
+            import json
+            Path(args.output).write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding='utf-8')
+        print(f"تحلیل {len(results)} فایل انجام شد.")
+        return
+
+    if args.file:
+        result = orchestrator.analyze_single(args.file, source='cli', save_db=args.db)
+        if args.output:
+            import json
+            Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+        else:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    print("لطفاً از --file یا --batch استفاده کنید.")
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        main_cli()
+    else:
+        App().mainloop()
