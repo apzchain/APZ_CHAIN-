@@ -1,0 +1,12 @@
+{
+  "total": 42,
+  "avg_score": 54.2,
+  "max_score": 98,
+  "min_score": 12,
+  "levels": {
+    "critical": 5,
+    "high": 12,
+    "medium": 18,
+    "low": 7
+  }
+}
