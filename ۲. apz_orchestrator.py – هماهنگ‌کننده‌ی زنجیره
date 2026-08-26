@@ -1,0 +1,164 @@
+"""
+Orchestrator: مدیریت زنجیره‌ی تحلیل APK
+"""
+
+import os
+import json
+import threading
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from typing import List, Dict, Optional
+
+from apz_manager import analyze_apk, sha256_file
+from reputation_engine import MultiReputationEngine
+from threat_platform import ThreatPlatform
+from risk_fusion_engine import RiskFusionEngine2
+from database import init_db, AnalysisRecord, ReputationRecord, IOCRecord
+import yaml
+
+class APZOrchestrator:
+    def __init__(self, config_path='config.yaml'):
+        with open(config_path, 'r', encoding='utf-8') as f:
+            self.config = yaml.safe_load(f)
+        self.db_session = init_db(self.config.get('database', 'apz.db'))()
+        self.reputation_engine = MultiReputationEngine()
+        self.threat_platform = ThreatPlatform(self.reputation_engine)
+        self.fusion_engine = RiskFusionEngine2()
+
+    def analyze_single(self, apk_path: str, source: str = 'cli', save_db: bool = True) -> dict:
+        """تحلیل یک APK و ذخیره‌سازی در پایگاه داده"""
+        if not os.path.exists(apk_path):
+            raise FileNotFoundError(f"فایل {apk_path} یافت نشد.")
+
+        # مرحله ۱: تحلیل ایستا
+        report = analyze_apk(apk_path)
+        sha = report['sha256']
+
+        # مرحله ۲: اعتبارسنجی
+        rep = self.reputation_engine.lookup(sha)
+
+        # مرحله ۳: Threat Platform (YARA, IOC, MITRE)
+        threat_result = self.threat_platform.analyze(apk_path, sha)
+
+        # مرحله ۴: فیوژن نهایی
+        fusion_input = {
+            'reputation': rep,
+            'yara_hits': threat_result.get('yara_hits', []),
+            'android_iocs': threat_result.get('android_iocs', []),
+            'manifest': threat_result.get('manifest', {}),
+            'mitre_attack': threat_result.get('mitre_attack', []),
+            'certificate': threat_result.get('certificate', {}),
+            'dynamic_sandbox': threat_result.get('dynamic_sandbox', {'status': 'not_configured'})
+        }
+        fusion_result = self.fusion_engine.fuse(fusion_input)
+
+        # ترکیب نتایج
+        final_report = {
+            **report,
+            'reputation': rep,
+            'threat_platform': threat_result,
+            'risk_fusion': fusion_result.__dict__,
+            'analyzed_at': datetime.utcnow().isoformat()
+        }
+
+        # ذخیره در دیتابیس
+        if save_db:
+            self._save_to_db(apk_path, final_report, source)
+
+        return final_report
+
+    def analyze_batch(self, apk_paths: List[str], max_workers: int = 4, source: str = 'batch') -> List[dict]:
+        """تحلیل چند APK به‌صورت همزمان"""
+        results = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(self.analyze_single, p, source): p for p in apk_paths}
+            for future in as_completed(futures):
+                try:
+                    results.append(future.result())
+                except Exception as e:
+                    results.append({'error': str(e), 'file': futures[future]})
+        return results
+
+    def _save_to_db(self, apk_path: str, report: dict, source: str):
+        """ذخیره‌سازی گزارش در دیتابیس"""
+        session = self.db_session
+        # تحلیل اصلی
+        record = AnalysisRecord(
+            sha256=report['sha256'],
+            file_name=Path(apk_path).name,
+            file_size=report['file_size'],
+            risk_score=report['risk_score'],
+            risk_level=report['risk_level'],
+            confidence=report['confidence'],
+            sandbox_verdict=report.get('sandbox_verdict', 'unknown'),
+            findings_json=report.get('findings', []),
+            report_json=report,
+            source=source
+        )
+        session.merge(record)  # اگر SHA تکراری بود، به‌روز می‌شود
+
+        # ذخیره‌ی Reputation
+        if 'reputation' in report:
+            rep = ReputationRecord(
+                sha256=report['sha256'],
+                overall_verdict=report['reputation'].get('overall_verdict', 'unknown'),
+                provider_results=report['reputation'].get('providers', [])
+            )
+            session.merge(rep)
+
+        # ذخیره‌ی IOCها
+        if 'threat_platform' in report and 'android_iocs' in report['threat_platform']:
+            for ioc in report['threat_platform']['android_iocs']:
+                ioc_rec = IOCRecord(
+                    sha256=report['sha256'],
+                    kind=ioc.get('kind', 'unknown'),
+                    value=ioc.get('value', ''),
+                    source=ioc.get('source', 'static'),
+                    severity=ioc.get('severity', 'low')
+                )
+                session.add(ioc_rec)
+
+        session.commit()
+
+    def generate_summary(self, sha256_list: List[str]) -> dict:
+        """تولید خلاصه‌ی آماری برای چند SHA"""
+        session = self.db_session
+        records = session.query(AnalysisRecord).filter(AnalysisRecord.sha256.in_(sha256_list)).all()
+        if not records:
+            return {'error': 'No records found'}
+
+        scores = [r.risk_score for r in records]
+        return {
+            'total': len(records),
+            'avg_score': sum(scores)/len(scores),
+            'max_score': max(scores),
+            'min_score': min(scores),
+            'levels': {
+                'critical': sum(1 for r in records if r.risk_level == 'CRITICAL'),
+                'high': sum(1 for r in records if r.risk_level == 'HIGH'),
+                'medium': sum(1 for r in records if r.risk_level == 'MEDIUM'),
+                'low': sum(1 for r in records if r.risk_level == 'LOW')
+            }
+        }
+
+    def export_report(self, sha256: str, output_format: str = 'json', output_path: str = None):
+        """صدور گزارش یک تحلیل خاص"""
+        session = self.db_session
+        record = session.query(AnalysisRecord).filter_by(sha256=sha256).first()
+        if not record:
+            raise ValueError(f'SHA-256 {sha256} not found in database.')
+
+        if output_format == 'json':
+            import json
+            data = record.report_json
+            if output_path:
+                Path(output_path).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+            return data
+        elif output_format == 'html':
+            from report_generator import ReportGenerator
+            html_path = output_path or f'report_{sha256[:8]}.html'
+            ReportGenerator.generate_html(record.report_json, html_path)
+            return html_path
+        else:
+            raise ValueError(f'Unsupported format: {output_format}')
