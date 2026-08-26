@@ -1,0 +1,39 @@
+اجرای GUI (همانند قبل)
+
+```bash
+python apz_manager.py
+```
+
+اجرای CLI برای یک فایل
+
+```bash
+python apz_manager.py --file malware.apk --output result.json --db
+```
+
+اجرای CLI برای چند فایل (دسته‌ای)
+
+```bash
+python apz_manager.py --batch list.txt --output batch_results.json
+```
+
+که list.txt شامل مسیر هر APK در یک خط است.
+
+اجرای سرور API
+
+```bash
+python apz_api.py
+```
+
+سپس می‌توانید درخواست POST به http://localhost:5000/analyze با JSON حاوی {"apk_path": "..."} ارسال کنید.
+
+استفاده از Orchestrator در کدهای دیگر
+
+```python
+from apz_orchestrator import APZOrchestrator
+orch = APZOrchestrator()
+report = orch.analyze_single('app.apk')
+summary = orch.generate_summary(['sha1', 'sha2'])
+```
+
+---
+
