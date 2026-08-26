@@ -1,0 +1,64 @@
+"""
+API سرور برای یکپارچه‌سازی با CI/CD و SIEM
+"""
+
+from flask import Flask, request, jsonify
+from apz_orchestrator import APZOrchestrator
+import os
+
+app = Flask(__name__)
+orchestrator = APZOrchestrator()
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    """دریافت مسیر APK و بازگرداندن گزارش"""
+    data = request.json
+    apk_path = data.get('apk_path')
+    if not apk_path or not os.path.exists(apk_path):
+        return jsonify({'error': 'Invalid or missing apk_path'}), 400
+
+    try:
+        result = orchestrator.analyze_single(apk_path, source='api')
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/batch', methods=['POST'])
+def batch():
+    """تحلیل دسته‌ای APKها"""
+    data = request.json
+    paths = data.get('apk_paths', [])
+    if not paths:
+        return jsonify({'error': 'apk_paths list required'}), 400
+
+    results = orchestrator.analyze_batch(paths, source='api')
+    return jsonify(results), 200
+
+@app.route('/summary/<sha256>', methods=['GET'])
+def summary(sha256):
+    """دریافت خلاصه‌ی یک SHA مشخص"""
+    session = orchestrator.db_session
+    from database import AnalysisRecord
+    record = session.query(AnalysisRecord).filter_by(sha256=sha256).first()
+    if not record:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify({
+        'sha256': sha256,
+        'risk_score': record.risk_score,
+        'risk_level': record.risk_level,
+        'confidence': record.confidence,
+        'sandbox_verdict': record.sandbox_verdict,
+        'analyzed_at': record.analyzed_at.isoformat()
+    })
+
+@app.route('/stats', methods=['GET'])
+def stats():
+    """آمار کلی از تحلیل‌های انجام‌شده"""
+    session = orchestrator.db_session
+    from database import AnalysisRecord
+    total = session.query(AnalysisRecord).count()
+    high = session.query(AnalysisRecord).filter(AnalysisRecord.risk_level.in_(['HIGH', 'CRITICAL'])).count()
+    return jsonify({'total_analyses': total, 'high_risk_count': high})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
