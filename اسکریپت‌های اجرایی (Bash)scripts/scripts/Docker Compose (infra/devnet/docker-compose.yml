@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  apz-node:
+    image: apz/node:dev
+    container_name: apz-node
+    restart: unless-stopped
+    environment:
+      - CHAIN_ID=apz-testnet-1
+      - NODE_MONIKER=apz-node-1
+    ports:
+      - "26656:26656"
+      - "26657:26657"
+    volumes:
+      - ./data/apz-node:/var/lib/apz
+    command: ["start"]
+
+  apz-indexer:
+    image: apz/indexer:dev
+    container_name: apz-indexer
+    restart: unless-stopped
+    depends_on:
+      - apz-node
+    environment:
+      - API_URL=http://apz-node:26657
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./data/apz-indexer:/var/lib/apz-indexer
+
+  apz-api:
+    image: apz/api:dev
+    container_name: apz-api
+    restart: unless-stopped
+    depends_on:
+      - apz-indexer
+    environment:
+      - DATABASE_URL=postgres://postgres:password@apz-postgres:5432/apz
+    ports:
+      - "8080:8080"
+
+  apz-postgres:
+    image: postgres:14
+    container_name: apz-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=apz
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
