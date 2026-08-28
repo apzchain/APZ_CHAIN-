@@ -1,0 +1,31 @@
+{
+  "chain_id": "apz-testnet-1",
+  "genesis_time": "2025-10-17T00:00:00Z",
+  "consensus_params": {
+    "block": { "max_bytes": "22020096", "max_gas": "-1", "time_iota_ms": "1000" },
+    "evidence": { "max_age_num_blocks": "100000", "max_age_duration": "172800000000000" },
+    "validator": { "pub_key_types": ["ed25519"] }
+  },
+  "validators": [
+    {
+      "address": "REPLACE_VALIDATOR_ADDRESS_1",
+      "pub_key": { "type": "tendermint/PubKeyEd25519", "value": "REPLACE_BASE64_PUBKEY_1" },
+      "power": "1000",
+      "name": "validator-1"
+    }
+  ],
+  "app_state": {
+    "bank": {
+      "balances": [
+        { "address": "REPLACE_TEAM_ADDRESS", "coins": [{ "denom": "apz", "amount": "150000000000000000000000000" }] }
+      ]
+    },
+    "staking": {
+      "params": { "unbonding_time": "1814400000000000", "max_validators": 100 }
+    },
+    "gov": {
+      "deposit_params": { "min_deposit": [{ "denom": "apz", "amount": "1000000000000000000" }] }
+    },
+    "supply": { "total": [{ "denom": "apz", "amount": "1000000000000000000000000000" }] }
+  }
+}
