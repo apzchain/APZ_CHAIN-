@@ -1,0 +1,288 @@
+openapi: "3.0.0"
+info:
+  title: APZ API
+  version: "0.1.0"
+servers:
+  - url: https://api.apz.example
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        wallet_address:
+          type: string
+        role:
+          type: string
+    Track:
+      type: object
+      properties:
+        id:
+          type: string
+        owner_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+        ipfs_hash:
+          type: string
+        created_at:
+          type: string
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        track_id:
+          type: string
+        start_at:
+          type: string
+        end_at:
+          type: string
+        reward_amount:
+          type: number
+paths:
+  /auth/challenge-request:
+    post:
+      summary: Request wallet challenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wallet_address:
+                  type: string
+      responses:
+        '200':
+          description: challenge returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge:
+                    type: string
+  /auth/wallet-verify:
+    post:
+      summary: Verify signature and issue JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wallet_address:
+                  type: string
+                signature:
+                  type: string
+      responses:
+        '200':
+          description: auth token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+  /tracks:
+    get:
+      summary: List tracks
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: visibility
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: list of tracks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Track'
+                  meta:
+                    type: object
+  /tracks:
+    post:
+      summary: Create a track
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                visibility:
+                  type: string
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  track:
+                    $ref: '#/components/schemas/Track'
+  /tracks/{id}:
+    get:
+      summary: Get track by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: single track
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  track:
+                    $ref: '#/components/schemas/Track'
+  /mining/session:
+    post:
+      summary: Start or end mining session
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                track_id:
+                  type: string
+                action:
+                  type: string
+                  enum: [start, end]
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: session status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Session'
+  /users/{id}/balance:
+    get:
+      summary: Get user balances
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: balances
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balances:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        token:
+                          type: string
+                        amount:
+                          type: number
+  /admin/tokens/mint:
+    post:
+      summary: Admin mint tokens
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                amount:
+                  type: number
+      responses:
+        '200':
+          description: mint tx
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tx_hash:
+                    type: string
+  /errors:
+    get:
+      summary: Error schema examples
+      responses:
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
