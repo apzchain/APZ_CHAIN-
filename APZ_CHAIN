@@ -1,0 +1,330 @@
+
+```markdown
+# 🌐 APZ-Chain
+**شبکه‌ی غیرمتمرکز، مقیاس‌پذیر و متن‌باز برای یادگیری و محتوای آموزشی**
+
+[![Solidity](https://img.shields.io/badge/Solidity-^0.8.20-blue)](https://soliditylang.org/)
+[![Hardhat](https://img.shields.io/badge/Hardhat-2.22.0-yellow)](https://hardhat.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.1.3-black)](https://nextjs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/your-username/apz-chain/actions/workflows/contracts-ci.yml/badge.svg)](https://github.com/your-username/apz-chain/actions/workflows/contracts-ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)]()
+
+---
+
+## 📖 معرفی کلی
+
+**APZ-Chain** یک شبکه‌ی عمومی، غیرمتمرکز و کامل (Layer 1) با برند **Asanpardaz Zagros** است که بستری امن، مقیاس‌پذیر و متن‌باز برای:
+
+- انتشار تراکنش‌ها
+- مدیریت قراردادهای هوشمند استاندارد (EVM‑compatible)
+- کیف‌پول‌های چندسکویی
+- ابزارهای استخراج/اعتبارسنجی
+- بازار توکن و حکمرانی کاربرمحور
+
+هدف اصلی، توانمندسازی جامعه‌ی توسعه‌دهندگان و کاربران برای ساخت اکوسیستمی مستقل و شفاف در حوزه‌ی بلاک‌چین و آموزش غیرمتمرکز است.
+
+---
+
+## ✨ ویژگی‌های کلیدی (به‌زبان ساده)
+
+| ویژگی | توضیح مختصر |
+|--------|---------------|
+| **هسته‌ی BFT PoS** | الهام‌گرفته از Tendermint → نهایی‌سازی سریع و کارمزد پایین |
+| **ماشین مجازی EVM** | پشتیبانی کامل از قراردادهای Solidity (سازگار با اتریوم) |
+| **توکن بومی APZ** | برای کارمزد، پاداش استیک، رأی‌دهی و دسترسی به امکانات ویژه |
+| **کیف‌پول رسمی** | وب‌اکستنشن + موبایل + SDK جاوااسکریپت برای توسعه‌دهندگان |
+| **ذخیره‌سازی غیرمتمرکز** | ارجاع هش در زنجیره به IPFS/Arweave برای فایل‌ها و متادیتا |
+| **پشتیبانی هوشمند** | موتور مبتنی بر DeepSeek AI برای راهنمایی و عیب‌یابی خودکار |
+| **حکمرانی کاربرمحور** | رأی‌گیری روی پیشنهادات و تخصیص خزانه توسط جامعه |
+
+---
+
+## 🏗️ معماری کلی
+
+```
+
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│   بلاک‌چین (EVM) │◄────►│   ایندکسر       │◄────►│   پایگاه داده   │
+│  - قراردادها     │      │  (رصد رویدادها) │      │  (MongoDB)      │
+└─────────────────┘      └─────────────────┘      └─────────────────┘
+▲                        ▲                        ▲
+│                        │                        │
+▼                        ▼                        ▼
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│   API Gateway   │◄────►│   Web App       │      │   کاربران       │
+│  - احراز هویت   │      │  (Next.js)      │      │  (مرورگر)       │
+│  - تیکت‌ها      │      │  - صفحات دمو    │      │                 │
+└─────────────────┘      └─────────────────┘      └─────────────────┘
+
+```
+
+---
+
+## 📂 ساختار پروژه
+
+```bash
+apz-chain/
+├── contracts/                  # قراردادهای هوشمند + تست‌ها
+│   ├── APZToken.sol
+│   ├── Staking.sol
+│   ├── Governance.sol
+│   ├── hardhat.config.js
+│   ├── package.json
+│   ├── .echidna.yaml
+│   └── test/                   # تست‌های واحد، فازینگ، Foundry
+├── apps/
+│   ├── api/                    # API با احراز هویت، تیکت، WebSocket
+│   ├── indexer/                # ایندکسر رویدادهای بلاک‌چین
+│   └── web/                    # رابط کاربری Next.js
+├── docs/                       # مستندات (فارسی/انگلیسی)
+├── scripts/                    # اسکریپت‌های بوت‌استرپ و ابزار
+├── infra/                      # Dockerfile‌ها، Helm Charts، docker-compose
+├── systemd/                    # فایل سرویس systemd برای گره
+├── .github/workflows/          # CI/CD (تست، ساخت، انتشار)
+├── openapi.yaml                # مستندات OpenAPI
+├── genesis.json                # فایل جنسیس برای شبکه‌ی خصوصی
+└── README.md                   # همین فایل
+```
+
+---
+
+🔹 قراردادهای هوشمند (EVM‑Compatible)
+
+۱. توکن APZ (APZToken.sol)
+
+· استاندارد ERC-20 با قابلیت ضرب (فقط مالک) و سوزاندن (هر کاربر).
+· مقدار اولیه در زمان دیپلوی مشخص می‌شود.
+
+۲. استیکینگ (Staking.sol)
+
+· کاربران می‌توانند توکن APZ را استیک کرده و پاداش دریافت کنند.
+· پاداش بر اساس rewardRate (تعداد توکن در ثانیه) محاسبه می‌شود.
+· امکانات: stake, withdraw, getReward, exit.
+· محافظت در برابر حملات بازورودی (ReentrancyGuard).
+
+۳. حاکمیت (Governance.sol)
+
+· هر کاربر می‌تواند یک پیشنهاد ثبت کند.
+· رأی‌گیری با وزن برابر با موجودی توکن در زمان رأی (با استفاده از Snapshot در نسخه‌ی بهبودیافته).
+· زمان رأی‌گیری قابل تنظیم است.
+· پیشنهادات پس از پایان زمان و کسب رأی موافق بیشتر، قابل اجرا هستند.
+
+---
+
+🧠 موتور پشتیبانی پیشرفته (DeepSeek AI)
+
+سیستمی هوشمند با استفاده از deepseek-coder و معماری عامل‌محور که قابلیت‌هایی نظیر:
+
+· عیب‌یابی خودکار
+· راهنمای پروتکل
+· مدیریت مالی
+· تکمیل پروژه
+
+را به کاربران و توسعه‌دهندگان ارائه می‌دهد.
+
+```javascript
+// نمونه کد اتصال به موتور پشتیبانی
+import { AdvancedAISupportEngine } from 'apz-chain/support';
+
+const engine = new AdvancedAISupportEngine({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  model: 'deepseek-coder',
+  maxTokens: 8000,
+  temperature: 0.3
+});
+```
+
+---
+
+💎 مدل اقتصادی توکن APZ
+
+کاربرد توضیح
+کارمزد تراکنش پرداخت هزینه‌ی اجرای قراردادها و انتقال‌ها
+پاداش اعتبارسنج‌ها توزیع پاداش بلوک به استیکرها و نودها
+حکمرانی رأی‌دهی به پیشنهادات ارتقاء شبکه و تخصیص خزانه
+دسترسی ویژه فعال‌سازی قابلیت‌های پیشرفته برای کاربران
+
+· عرضه‌ی اولیه و جدول تخصیص در مستندات توکنومیکس کامل توضیح داده شده است.
+· مدل تورمی با نرخ پویا بر اساس مشارکت شبکه.
+
+---
+
+🗺️ نقشه‌ی راه (Roadmap)
+
+فاز بازه‌ی زمانی دستاوردها
+فاز ۱ Q1 2026 انتشار وایت‌پیپر، استقرار Testnet، کیف‌پول وب (MVP)
+فاز ۲ Q2 2026 راه‌اندازی Mainnet، قراردادهای پایه (توکن، استیک، حکمرانی)
+فاز ۳ Q3 2026 کیف‌پول موبایل، SDK رسمی، راهنمای نود اعتبارسنج
+فاز ۴ Q4 2026 بازار توکن، برنامه‌ی جذب اعتبارسنج، ممیزی امنیتی نهایی
+فاز ۵ Q1 2027 حکمرانی غیرمتمرکز کامل، سیستم پیشنهادات و خزانه‌ی جامعه
+
+---
+
+🚀 نصب و راه‌اندازی سریع
+
+۱. پیش‌نیازها
+
+· Node.js >= 20.x
+· npm یا yarn
+· Docker و Docker Compose (برای اجرای کانتینری)
+· MetaMask (برای اتصال به شبکه‌ی محلی)
+
+۲. کلون کردن مخزن
+
+```bash
+git clone https://github.com/your-username/apz-chain.git
+cd apz-chain
+```
+
+۳. نصب وابستگی‌ها و بوت‌استرپ
+
+```bash
+./scripts/bootstrap-all.sh
+```
+
+۴. راه‌اندازی شبکه‌ی محلی و دیپلوی قراردادها
+
+```bash
+cd contracts
+npx hardhat node  # ترمینال اول
+npx hardhat run scripts/deploy.js --network localhost  # ترمینال دوم
+```
+
+۵. اجرای API و ایندکسر با Docker Compose
+
+```bash
+cd infra/devnet
+docker-compose up -d
+```
+
+۶. اجرای رابط کاربری وب
+
+```bash
+cd apps/web
+npm run dev
+```
+
+و مرورگر را به http://localhost:3000 باز کنید.
+
+---
+
+🧪 تست و تحلیل
+
+اجرای تست‌های Hardhat
+
+```bash
+cd contracts
+npx hardhat test
+```
+
+اجرای تست‌های Foundry
+
+```bash
+cd contracts
+forge test
+```
+
+اجرای فازینگ با Echidna
+
+```bash
+echidna-test contracts/test/FuzzStaking.t.sol --config contracts/.echidna.yaml
+```
+
+محاسبه‌ی پوشش کد
+
+```bash
+npx hardhat coverage
+```
+
+---
+
+🌐 API
+
+مستندات کامل API در فایل openapi.yaml موجود است. برخی از مسیرهای اصلی:
+
+مسیر متد توضیح
+/api/tickets POST ساخت تیکت با userId و track
+/api/tickets/verify/:token GET تأیید تیکت و بازگرداندن اطلاعات
+/api/ws WebSocket دریافت رویدادهای زنده (استیک، رأی، تراکنش‌ها)
+
+مثال درخواست با cURL
+
+```bash
+curl -X POST http://localhost:3000/api/tickets \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"alice","track":"solidity-basics"}'
+```
+
+---
+
+🐳 استقرار با Docker
+
+برای اجرای کل اکوسیستم با یک دستور:
+
+```bash
+cd infra/devnet
+docker-compose up -d
+```
+
+سرویس‌های موجود:
+
+· گره اتریوم (Geth) روی پورت 8545
+· API روی پورت 3000
+· ایندکسر (در پس‌زمینه)
+
+برای استقرار در Kubernetes از Helm Charts استفاده کنید:
+
+```bash
+helm install apz-chain infra/helm/node/
+helm install apz-api infra/helm/api/
+helm install apz-indexer infra/helm/indexer/
+```
+
+---
+
+📚 مستندات بیشتر
+
+· معماری پروژه (ARCHITECTURE.md)
+· راهنمای استقرار (DEPLOYMENT.md)
+· مفاهیم آموزشی
+  · فارسی: SAP-NFC, Models, ...
+  · انگلیسی: en/
+
+---
+
+🤝 مشارکت
+
+ما از مشارکت شما استقبال می‌کنیم! لطفاً مراحل زیر را دنبال کنید:
+
+1. این مخزن را فورک کنید.
+2. یک شاخه (branch) جدید برای ویژگی یا رفع باگ خود ایجاد کنید.
+3. تغییرات خود را اعمال کرده و تست کنید.
+4. یک Pull Request با توضیح کامل ارسال کنید.
+
+لطفاً پیش از ارسال PR، مطمئن شوید که:
+
+· تمام تست‌ها با موفقیت عبور می‌کنند.
+· پوشش کد کاهش نیافته است.
+· مستندات به‌روزرسانی شده‌اند.
+
+---
+
+📄 لایسنس
+
+این پروژه تحت لایسنس MIT منتشر شده است. برای جزئیات بیشتر به فایل LICENSE مراجعه کنید.
+
+---
+
+📞 ارتباط با تیم
+
+· وب‌سایت: apz-chain.io
+· توییتر: @APZChain
+· دیسکورد: Join Discord
+· ایمیل: support@apz-chain.io
+
+---
+
+ساخته شده با ❤️ توسط تیم Asanpardaz Zagros
+
+```
